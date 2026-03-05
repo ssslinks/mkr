@@ -1,0 +1,38 @@
+{
+  "releases": [
+    {
+      "id": 1,
+      "name": "Оновлення платіжного шлюзу",
+      "environment": "Production",
+      "team": "Backend Team",
+      "status": "deployed",
+      "date": "2024-05-20",
+      "approvers": [
+        { "id": 1, "name": "Олександр", "approved": true },
+        { "id": 2, "name": "Марія", "approved": true }
+      ],
+      "checklist": [
+        { "id": 1, "task": "Перевірити бекап БД", "done": true },
+        { "id": 2, "task": "Оновити API документацію", "done": true }
+      ],
+      "rollbackPlan": "Відкотити коміт 4f8a9b та перезапустити сервіс."
+    },
+    {
+      "id": 2,
+      "name": "Новий дизайн профілю",
+      "environment": "Staging",
+      "team": "Frontend Team",
+      "status": "review",
+      "date": "2024-05-22",
+      "approvers": [
+        { "id": 1, "name": "Олександр", "approved": false },
+        { "id": 2, "name": "Іван", "approved": true }
+      ],
+      "checklist": [
+        { "id": 1, "task": "Перевірити на мобільних пристроях", "done": true },
+        { "id": 2, "task": "Прогнати E2E тести", "done": false }
+      ],
+      "rollbackPlan": "Повернути попередню версію компонента UserProfile."
+    }
+  ]
+}
