@@ -61,12 +61,30 @@ export default function ReleaseForm({ onAddRelease, authorizedPersonnel = [], cu
 
   const handleSave = () => {
     if (!validate()) return;
+    
     const newRelease = {
       id: Date.now(), name, environment, team: currentUser?.role || 'SYNDICATE',
       status: 'draft', date: new Date().toISOString().split('T')[0],
       approvers, checklist, rollbackPlan
     };
+    
     if (onAddRelease) onAddRelease(newRelease);
+
+    // ВІДНОВЛЕНЕ СИСТЕМНЕ СПОВІЩЕННЯ
+    if (window.Notification && window.Notification.permission === "granted") {
+      new window.Notification('SYSTEM_OVERRIDE', { 
+        body: `✅ Директиву [${name}] успішно згенеровано!` 
+      });
+    } else if (window.Notification && window.Notification.permission !== "denied") {
+      window.Notification.requestPermission().then(permission => {
+        if (permission === "granted") {
+          new window.Notification('SYSTEM_OVERRIDE', { 
+            body: `✅ Директиву [${name}] успішно згенеровано!` 
+          });
+        }
+      });
+    }
+
     navigate('/');
   };
 
@@ -95,7 +113,7 @@ export default function ReleaseForm({ onAddRelease, authorizedPersonnel = [], cu
           <TextField label="> RELEASE_NAME *" value={name} onChange={(e) => { setName(e.target.value); setErrors({...errors, name: null}); }} error={!!errors.name} helperText={errors.name} fullWidth {...inputProps} />
           
           <FormControl fullWidth error={!!errors.environment} sx={inputProps.sx}>
-            <InputLabel>> TARGET_ENVIRONMENT *</InputLabel>
+            <InputLabel>&gt; TARGET_ENVIRONMENT *</InputLabel>
             <Select value={environment} label="> TARGET_ENVIRONMENT *" onChange={(e) => { setEnvironment(e.target.value); setErrors({...errors, environment: null}); }} sx={{ borderRadius: 0 }}>
               <MenuItem value="Staging">STAGING_AREA</MenuItem>
               <MenuItem value="Production">PRODUCTION_CORE</MenuItem>
@@ -110,7 +128,7 @@ export default function ReleaseForm({ onAddRelease, authorizedPersonnel = [], cu
           </Typography>
           <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
             <FormControl fullWidth error={!!errors.approvers} sx={inputProps.sx}>
-              <InputLabel>> SELECT_OVERSEER</InputLabel>
+              <InputLabel>&gt; SELECT_OVERSEER</InputLabel>
               <Select value={approverToAdd} label="> SELECT_OVERSEER" onChange={(e) => setApproverToAdd(e.target.value)} sx={{ borderRadius: 0 }}>
                 {availableApprovers.map(p => <MenuItem key={p.id} value={p.id}>{p.name} ({p.role})</MenuItem>)}
               </Select>

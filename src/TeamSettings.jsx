@@ -2,9 +2,49 @@ import { useState } from 'react';
 import { Box, Typography, Paper, TextField, Button, Table, TableBody, TableCell, TableHead, TableRow } from '@mui/material';
 import { motion } from 'framer-motion';
 
-export default function TeamSettings({ team, currentUser }) {
+export default function TeamSettings({ team, setTeam, currentUser }) {
   const [name, setName] = useState('');
   const [role, setRole] = useState('');
+
+  // Наша універсальна функція для кібер-сповіщень
+  const showNotification = (title, body) => {
+    if (window.Notification && window.Notification.permission === "granted") {
+      new window.Notification(title, { body });
+    } else if (window.Notification && window.Notification.permission !== "denied") {
+      window.Notification.requestPermission().then(permission => {
+        if (permission === "granted") {
+          new window.Notification(title, { body });
+        }
+      });
+    }
+  };
+
+  // Логіка додавання користувача
+  const handleAddUser = () => {
+    if (!name.trim() || !role.trim()) return; // Захист від порожніх полів
+    
+    const newUser = { 
+      id: `u${Date.now()}`, // Генеруємо унікальний ID
+      name: name.trim(), 
+      role: role.trim() 
+    };
+    
+    setTeam([...team, newUser]);
+    setName('');
+    setRole('');
+    
+    showNotification('NODE_REGISTERED', `✅ Користувача [${newUser.name}] успішно підключено до реєстру.`);
+  };
+
+  // Логіка видалення користувача
+  const handleRemoveUser = (id) => {
+    const userToRemove = team.find(u => u.id === id);
+    setTeam(team.filter(u => u.id !== id));
+    
+    if (userToRemove) {
+      showNotification('ACCESS_REVOKED', `⛔ Доступ для [${userToRemove.name}] назавжди анульовано.`);
+    }
+  };
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
@@ -24,8 +64,14 @@ export default function TeamSettings({ team, currentUser }) {
           label="> CLEARANCE_LEVEL (Посада)" size="small" value={role} onChange={e => setRole(e.target.value)} 
           sx={{ flexGrow: 1, fieldset: { borderRadius: 0 } }} 
         />
-        <Button variant="contained" color="primary" disabled sx={{ height: 40 }}>
-          REGISTER_NODE // WIP
+        <Button 
+          variant="contained" 
+          color="primary" 
+          onClick={handleAddUser} // Підключили логіку
+          disabled={!name.trim() || !role.trim()} // Кнопка активна тільки якщо є текст
+          sx={{ height: 40 }}
+        >
+          REGISTER_NODE
         </Button>
       </Paper>
 
@@ -46,7 +92,13 @@ export default function TeamSettings({ team, currentUser }) {
                 </TableCell>
                 <TableCell sx={{ color: 'text.secondary' }}>{m.role}</TableCell>
                 <TableCell align="right">
-                  <Button color="error" variant="outlined" disabled={m.id === currentUser.id} sx={{ borderRadius: 0 }}>
+                  <Button 
+                    color="error" 
+                    variant="outlined" 
+                    onClick={() => handleRemoveUser(m.id)} // Підключили видалення
+                    disabled={m.id === currentUser.id} 
+                    sx={{ borderRadius: 0 }}
+                  >
                     REVOKE_ACCESS
                   </Button>
                 </TableCell>

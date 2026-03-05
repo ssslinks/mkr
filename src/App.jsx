@@ -111,24 +111,46 @@ export default function App() {
 
   const handleAddLog = (action) => setLogs(prev => [{ id: Date.now(), time: new Date().toLocaleString(), user: currentUser.name, action }, ...prev]);
 
+  // --- УНІВЕРСАЛЬНА ФУНКЦІЯ ДЛЯ СИСТЕМНИХ СПОВІЩЕНЬ ---
+  const showNotification = (title, body) => {
+    if (window.Notification && window.Notification.permission === "granted") {
+      new window.Notification(title, { body });
+    } else if (window.Notification && window.Notification.permission !== "denied") {
+      window.Notification.requestPermission().then(permission => {
+        if (permission === "granted") {
+          new window.Notification(title, { body });
+        }
+      });
+    }
+  };
+
   const handleStatusChange = (id, newStatus) => {
+    const releaseName = releases.find(r => r.id === id)?.name || "Невідомо";
     setReleases(releases.map(r => r.id === id ? { ...r, status: newStatus } : r));
-    handleAddLog(`Змінено статус релізу "${releases.find(r => r.id === id)?.name}" на [${newStatus.toUpperCase()}]`);
+    handleAddLog(`Змінено статус релізу "${releaseName}" на [${newStatus.toUpperCase()}]`);
+    
     if (newStatus === 'deployed') {
       setShowConfetti(true); setTimeout(() => setShowConfetti(false), 5000);
-      new Notification('SYSTEM OVERRIDE', { body: `Реліз успішно інжектовано в Mainframe.` });
+      showNotification('SYSTEM_OVERRIDE', `✅ Директиву [${releaseName}] успішно інжектовано в Mainframe.`);
+    } else {
+      showNotification('STATUS_UPDATE', `🔄 Статус [${releaseName}] змінено на ${newStatus.toUpperCase()}`);
     }
   };
 
   const handleDeleteRelease = (id) => {
-    handleAddLog(`[DATA PURGED]: Видалено реліз "${releases.find(r => r.id === id)?.name}"`);
+    const releaseName = releases.find(r => r.id === id)?.name || "Невідомо";
+    handleAddLog(`[DATA PURGED]: Видалено реліз "${releaseName}"`);
     setReleases(releases.filter(r => r.id !== id));
+    
+    showNotification('DATA_PURGED', `🗑️ Реліз [${releaseName}] знищено без можливості відновлення.`);
   };
 
   const handleRollback = (id) => {
+    const releaseName = releases.find(r => r.id === id)?.name || "Невідомо";
     setReleases(releases.map(r => r.id === id ? { ...r, status: 'rolled back' } : r));
-    handleAddLog(`[CRITICAL WARNING]: Ініційовано відкат релізу "${releases.find(r => r.id === id)?.name}"`);
-    new Notification('CRITICAL WARNING', { body: `Відкат релізу активовано.` });
+    handleAddLog(`[CRITICAL WARNING]: Ініційовано відкат релізу "${releaseName}"`);
+    
+    showNotification('CRITICAL_WARNING', `🚨 Аварійний план активовано! Відкат релізу [${releaseName}].`);
   };
 
   const handleAddRelease = (newRelease) => {
@@ -180,7 +202,18 @@ export default function App() {
           </Drawer>
 
           <Box component="main" sx={{ flexGrow: 1, p: 4, overflow: 'auto', bgcolor: 'background.default' }}>
-            <AnimatedRoutes releases={releases} logs={logs} team={team} currentUser={currentUser} onStatusChange={handleStatusChange} onDelete={handleDeleteRelease} onRollback={handleRollback} onAddRelease={handleAddRelease} />
+            <AnimatedRoutes 
+              releases={releases} 
+              logs={logs} 
+              team={team} 
+              authorizedPersonnel={team}
+              setTeam={setTeam}
+              currentUser={currentUser} 
+              onStatusChange={handleStatusChange} 
+              onDelete={handleDeleteRelease} 
+              onRollback={handleRollback} 
+              onAddRelease={handleAddRelease} 
+            />
           </Box>
         </Box>
       </HashRouter>
@@ -207,7 +240,7 @@ function AnimatedRoutes(props) {
         <Route path="/" element={<motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}><Dashboard {...props} /></motion.div>} />
         <Route path="/new" element={<motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.05 }}><ReleaseForm {...props} /></motion.div>} />
         <Route path="/audit" element={<motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}><AuditLog logs={props.logs} /></motion.div>} />
-        <Route path="/team" element={<motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}><TeamSettings team={props.team} currentUser={props.currentUser} /></motion.div>} />
+        <Route path="/team" element={<motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}><TeamSettings {...props} /></motion.div>} />
       </Routes>
     </AnimatePresence>
   );

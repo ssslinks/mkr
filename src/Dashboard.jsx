@@ -13,14 +13,23 @@ const statusConfig = {
 export default function Dashboard({ releases, onStatusChange, onDelete, onRollback }) {
   const [searchText, setSearchText] = useState('');
   const [envFilter, setEnvFilter] = useState('All');
+  const [sortBy, setSortBy] = useState('Newest'); // НОВИЙ СТАН ДЛЯ СОРТУВАННЯ
   const [confirmDelete, setConfirmDelete] = useState({ open: false, id: null });
   const [confirmRollback, setConfirmRollback] = useState({ open: false, id: null });
 
-  const filteredRows = releases.filter((r) => {
-    const matchName = r.name.toLowerCase().includes(searchText.toLowerCase());
-    const matchEnv = envFilter === 'All' || r.environment === envFilter;
-    return matchName && matchEnv;
-  });
+  // ФІЛЬТРАЦІЯ ТА СОРТУВАННЯ В ОДНОМУ ПОТОЦІ
+  const processedRows = releases
+    .filter((r) => {
+      const matchName = r.name.toLowerCase().includes(searchText.toLowerCase());
+      const matchEnv = envFilter === 'All' || r.environment === envFilter;
+      return matchName && matchEnv;
+    })
+    .sort((a, b) => {
+      if (sortBy === 'Newest') return b.id - a.id; // Свіжіші зверху (за timestamp)
+      if (sortBy === 'Oldest') return a.id - b.id; // Старіші зверху
+      if (sortBy === 'Team') return (a.team || '').localeCompare(b.team || ''); // За алфавітом команд
+      return 0;
+    });
 
   const containerVariants = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.1 } } };
   const itemVariants = { hidden: { opacity: 0, x: -20 }, show: { opacity: 1, x: 0 } };
@@ -40,18 +49,28 @@ export default function Dashboard({ releases, onStatusChange, onDelete, onRollba
           onChange={(e) => setSearchText(e.target.value)} 
           sx={{ flexGrow: 1, minWidth: 200 }} 
         />
-        <FormControl size="small" sx={{ minWidth: 200 }}>
-          <InputLabel>> ENVIRONMENT</InputLabel>
+        <FormControl size="small" sx={{ minWidth: 150 }}>
+          <InputLabel>&gt; ENVIRONMENT</InputLabel>
           <Select value={envFilter} label="> ENVIRONMENT" onChange={(e) => setEnvFilter(e.target.value)}>
             <MenuItem value="All">ALL_SECTORS</MenuItem>
             <MenuItem value="Staging">STAGING_AREA</MenuItem>
             <MenuItem value="Production">PRODUCTION_CORE</MenuItem>
           </Select>
         </FormControl>
+        
+        {/* НОВИЙ КОНТРОЛЕР ДЛЯ СОРТУВАННЯ */}
+        <FormControl size="small" sx={{ minWidth: 150 }}>
+          <InputLabel>&gt; SORT_BY</InputLabel>
+          <Select value={sortBy} label="> SORT_BY" onChange={(e) => setSortBy(e.target.value)}>
+            <MenuItem value="Newest">TIME_DESC [Нові]</MenuItem>
+            <MenuItem value="Oldest">TIME_ASC [Старі]</MenuItem>
+            <MenuItem value="Team">TEAM_ALIAS [Команда]</MenuItem>
+          </Select>
+        </FormControl>
       </Paper>
 
       <motion.div variants={containerVariants} initial="hidden" animate="show">
-        {filteredRows.map((release) => (
+        {processedRows.map((release) => (
           <motion.div key={release.id} variants={itemVariants}>
             <Paper 
               sx={{ 
@@ -62,8 +81,10 @@ export default function Dashboard({ releases, onStatusChange, onDelete, onRollba
             >
               <Box sx={{ pl: 1 }}>
                 <Typography variant="h6" color="text.primary" sx={{ textTransform: 'uppercase' }}>{release.name}</Typography>
-                <Box sx={{ display: 'flex', gap: 2, mt: 1, alignItems: 'center' }}>
+                <Box sx={{ display: 'flex', gap: 2, mt: 1, alignItems: 'center', flexWrap: 'wrap' }}>
                   <Typography variant="caption" color="text.secondary">TIME: {release.date}</Typography>
+                  {/* ДОДАНО ВІДОБРАЖЕННЯ КОМАНДИ НА КАРТЦІ */}
+                  <Typography variant="caption" color="text.secondary">TEAM: {release.team}</Typography>
                   <Typography variant="caption" color={release.environment === 'Production' ? 'error.main' : 'primary.main'}>
                     ENV: {release.environment}
                   </Typography>
